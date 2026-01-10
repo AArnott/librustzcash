@@ -3306,12 +3306,31 @@ pub(crate) fn truncate_to_height<P: consensus::Parameters>(
 
     // Un-mine transactions. This must be done outside of the last_scanned_height check because
     // transaction entries may be created as a consequence of receiving transparent TXOs.
-    conn.execute(
-        "UPDATE transactions
-         SET block = NULL, mined_height = NULL, tx_index = NULL, confirmed_unmined_at_height = NULL
-         WHERE mined_height > :height",
-        named_params![":height": u32::from(truncation_height)],
-    )?;
+    // Check if the confirmed_unmined_at_height column exists (added by tx_observation_height migration)
+    let has_confirmed_unmined = {
+        let mut stmt = conn.prepare("PRAGMA table_info(transactions)")?;
+        let mut rows = stmt.query_map([], |row| {
+            let col_name: String = row.get(1)?;
+            Ok(col_name)
+        })?;
+        rows.any(|name| name.as_ref().map(|n| n == "confirmed_unmined_at_height").unwrap_or(false))
+    };
+
+    if has_confirmed_unmined {
+        conn.execute(
+            "UPDATE transactions
+             SET block = NULL, mined_height = NULL, tx_index = NULL, confirmed_unmined_at_height = NULL
+             WHERE mined_height > :height",
+            named_params![":height": u32::from(truncation_height)],
+        )?;
+    } else {
+        conn.execute(
+            "UPDATE transactions
+             SET block = NULL, mined_height = NULL, tx_index = NULL
+             WHERE mined_height > :height",
+            named_params![":height": u32::from(truncation_height)],
+        )?;
+    }
 
     // If we're removing scanned blocks, we need to truncate the note commitment tree and remove
     // affected block records from the database.
