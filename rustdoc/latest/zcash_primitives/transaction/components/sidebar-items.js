@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["GROTH_PROOF_SIZE"],"mod":["orchard","sapling","sprout"]};
