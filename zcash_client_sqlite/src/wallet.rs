@@ -3313,7 +3313,11 @@ pub(crate) fn truncate_to_height<P: consensus::Parameters>(
             let col_name: String = row.get(1)?;
             Ok(col_name)
         })?;
-        rows.any(|name| name.as_ref().map(|n| n == "confirmed_unmined_at_height").unwrap_or(false))
+        rows.any(|name| {
+            name.as_ref()
+                .map(|n| n == "confirmed_unmined_at_height")
+                .unwrap_or(false)
+        })
     };
 
     if has_confirmed_unmined {

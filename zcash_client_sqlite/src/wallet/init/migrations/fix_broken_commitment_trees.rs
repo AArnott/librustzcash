@@ -88,7 +88,10 @@ mod tests {
     use crate::{
         WalletDb,
         testing::db::{test_clock, test_rng},
-        wallet::init::{WalletMigrator, migrations::{support_legacy_sqlite, tx_observation_height}},
+        wallet::init::{
+            WalletMigrator,
+            migrations::{support_legacy_sqlite, tx_observation_height},
+        },
     };
 
     use super::MIGRATION_ID;
@@ -143,8 +146,15 @@ mod tests {
                 Ok(col_name)
             })
             .unwrap()
-            .any(|name| name.as_ref().map(|n| n == "confirmed_unmined_at_height").unwrap_or(false));
-        assert!(!column_exists, "confirmed_unmined_at_height column should not exist yet");
+            .any(|name| {
+                name.as_ref()
+                    .map(|n| n == "confirmed_unmined_at_height")
+                    .unwrap_or(false)
+            });
+        assert!(
+            !column_exists,
+            "confirmed_unmined_at_height column should not exist yet"
+        );
 
         // Now run the fix_broken_commitment_trees migration, which calls truncate_to_height
         // This should work without the confirmed_unmined_at_height column
@@ -158,7 +168,10 @@ mod tests {
             .conn
             .query_row("SELECT COUNT(*) FROM transactions", [], |row| row.get(0))
             .unwrap();
-        assert_eq!(tx_count, 2, "Transactions should still exist after migration");
+        assert_eq!(
+            tx_count, 2,
+            "Transactions should still exist after migration"
+        );
     }
 
     /// Test that the migration works correctly when the `confirmed_unmined_at_height` column
@@ -221,8 +234,15 @@ mod tests {
                 Ok(col_name)
             })
             .unwrap()
-            .any(|name| name.as_ref().map(|n| n == "confirmed_unmined_at_height").unwrap_or(false));
-        assert!(column_exists, "confirmed_unmined_at_height column should exist");
+            .any(|name| {
+                name.as_ref()
+                    .map(|n| n == "confirmed_unmined_at_height")
+                    .unwrap_or(false)
+            });
+        assert!(
+            column_exists,
+            "confirmed_unmined_at_height column should exist"
+        );
 
         // Verify the second transaction has the confirmed_unmined_at_height value set
         let confirmed_value: Option<u32> = db_data
@@ -241,7 +261,10 @@ mod tests {
             "UPDATE transactions SET confirmed_unmined_at_height = NULL WHERE id_tx = 2",
             [],
         );
-        assert!(result.is_ok(), "Should be able to update confirmed_unmined_at_height when column exists");
+        assert!(
+            result.is_ok(),
+            "Should be able to update confirmed_unmined_at_height when column exists"
+        );
 
         // Verify that the confirmed_unmined_at_height was reset
         let confirmed_value: Option<u32> = db_data
